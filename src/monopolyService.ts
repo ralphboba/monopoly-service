@@ -67,6 +67,9 @@ router.get('/players/:id', readPlayer);
 router.put('/players/:id', updatePlayer);
 router.post('/players', createPlayer);
 router.delete('/players/:id', deletePlayer);
+router.get('/games', readGames);
+router.get('/games/:id', readGamePlayers);
+router.delete('/games/:id', deleteGame);
 
 // For testing only; vulnerable to SQL injection!
 // router.get('/bad/players/:id', readPlayerBad);
@@ -210,6 +213,60 @@ function deletePlayer(request: Request, response: Response, next: NextFunction):
         return t.none('DELETE FROM PlayerGame WHERE playerID=${id}', request.params)
             .then(() => {
                 return t.oneOrNone('DELETE FROM Player WHERE id=${id} RETURNING id', request.params);
+            });
+    })
+        .then((data: { id: number } | null): void => {
+            returnDataOr404(response, data);
+        })
+        .catch((error: Error): void => {
+            next(error);
+        });
+}
+
+/**
+ * Retrieves all games from the database.
+ */
+function readGames(_request: Request, response: Response, next: NextFunction): void {
+    db.manyOrNone('SELECT * FROM Game')
+        .then((data: unknown[]): void => {
+            response.send(data);
+        })
+        .catch((error: Error): void => {
+            next(error);
+        });
+}
+
+/**
+ * Retrieves the name and score for every player who played in the specified game.
+ */
+function readGamePlayers(request: Request, response: Response, next: NextFunction): void {
+    db.manyOrNone(
+        `SELECT Player.name, PlayerGame.score
+         FROM PlayerGame
+         JOIN Player ON PlayerGame.playerID = Player.id
+         WHERE PlayerGame.gameID = ${request.params.id}`
+    )
+        .then((data: { name: string; score: number }[]): void => {
+            response.send(data);
+        })
+        .catch((error: Error): void => {
+            next(error);
+        });
+}
+
+/**
+ * Deletes a specific game from the database.
+ *
+ * Deleting a game requires cascading deletion of PlayerGame records first to
+ * maintain referential integrity. This function uses a transaction (`tx()`) to
+ * ensure that both the PlayerGame records and the Game record are deleted
+ * atomically (i.e., either both operations succeed or both fail together).
+ */
+function deleteGame(request: Request, response: Response, next: NextFunction): void {
+    db.tx((t) => {
+        return t.none('DELETE FROM PlayerGame WHERE gameID=${id}', request.params)
+            .then(() => {
+                return t.oneOrNone('DELETE FROM Game WHERE id=${id} RETURNING id', request.params);
             });
     })
         .then((data: { id: number } | null): void => {

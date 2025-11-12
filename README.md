@@ -2,7 +2,7 @@
 
 This is the data service application for the
 [CS 262 sample Monopoly project](https://github.com/calvin-cs262-organization/monopoly-project),
- which is deployed here:
+which is deployed here:
 
 - <https://cs262-egbefbd4aae2h0df.canadacentral-01.azurewebsites.net><br>(This URL may vary from year to year.)
 
@@ -11,6 +11,9 @@ Based on this URL, the service implements the following endpoints:
 - `/` &mdash; a hello message
 - `/players` &mdash; the full list of players
 - `/players/:id` &mdash; the single player with the given ID (e.g., `/players/1`)
+- `/games` &mdash; the full list of games
+- `/games/:id` &mdash; the name and score for every player who played in the specified game (e.g., `/games/2`)
+- `/games/:id` (DELETE) &mdash; deletes the specified game by ID
 
 Also, it gives the following responses:
 
